@@ -1,0 +1,34 @@
+# nginx proxy address - http://172.17.0.1:5000
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "1"
+
+services:
+  changedetection:
+    image: changedetection/changedetection:latest
+    container_name: changedetection-app
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - changedetection
+    ports:
+      - "5000:5000"
+    environment:
+      TZ: ${TZ:-America/New_York}
+      PUID: ${SERVICE_USER:-1000}
+      PGID: ${SERVICE_GROUP:-1000}
+    volumes:
+      - ./rootfs/config/changedetection:/config
+      - ./rootfs/data/changedetection:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  changedetection:
+    external: false
