@@ -47,8 +47,8 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/config/changedetection` - Data storage
-- `./rootfs/data/changedetection` - Data storage
+- `./volumes/config/changedetection` - Data storage
+- `./volumes/data/changedetection` - Data storage
 
 ## 🔍 Logging
 
