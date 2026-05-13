@@ -24,7 +24,7 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
       BASE_URL: http://${BASE_HOST_NAME:-localhost}:5000
-      PLAYWRIGHT_DRIVER_URL: ws://changedetection-playwright:3000/
+      PLAYWRIGHT_DRIVER_URL: ws://changedetection-playwright:3000/?stealth=1&--disable-web-security=true
       CONTAINER_NAME: changedetection-app
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     volumes:
@@ -54,12 +54,14 @@ services:
       - 'traefik.http.services.changedetection-app.loadbalancer.server.port=5000'
 
   playwright:
-    image: browserless/chrome:latest
+    image: dgtlmoon/sockpuppetbrowser:latest
     pull_policy: always
     container_name: changedetection-playwright
     hostname: changedetection-playwright
     restart: always
     logging: *default-logging
+    cap_add:
+      - SYS_ADMIN
     networks:
       - changedetection
     environment:
@@ -67,13 +69,7 @@ services:
       SCREEN_WIDTH: 1920
       SCREEN_HEIGHT: 1024
       SCREEN_DEPTH: 16
-      ENABLE_DEBUGGER: false
-      PREBOOT_CHROME: true
-      CONNECTION_TIMEOUT: 300000
-      MAX_CONCURRENT_SESSIONS: ${PLAYWRIGHT_MAX_SESSIONS:-10}
-      CHROME_REFRESH_TIME: 600000
-      DEFAULT_BLOCK_ADS: true
-      DEFAULT_STEALTH: true
+      MAX_CONCURRENT_CHROME_PROCESSES: ${PLAYWRIGHT_MAX_SESSIONS:-10}
       CONTAINER_NAME: changedetection-playwright
 
 networks:
