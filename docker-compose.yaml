@@ -17,12 +17,16 @@ services:
     logging: *default-logging
     networks:
       - changedetection
+      - proxy
+      - cloudflare
     ports:
       - "172.17.0.1:5000:5000"
     environment:
       TZ: ${TZ:-America/New_York}
       BASE_URL: http://${BASE_HOST_NAME:-localhost}:5000
       PLAYWRIGHT_DRIVER_URL: ws://changedetection-playwright:3000/
+      CONTAINER_NAME: changedetection-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     volumes:
       - ./volumes/data/changedetection:/datastore
     depends_on:
@@ -32,6 +36,22 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://changedetection-app:5000'
+      - 'cloudflare.hostname=changedetection.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.changedetection-app.entrypoints=http'
+      - 'traefik.http.routers.changedetection-app-secure.tls=true'
+      - 'traefik.http.routers.changedetection-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.changedetection-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.changedetection-app.middlewares=changedetection-app-https-redirect'
+      - 'traefik.http.routers.changedetection-app-secure.entrypoints=https'
+      - 'traefik.http.routers.changedetection-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.changedetection-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.changedetection-app-secure.service=changedetection-app'
+      - 'traefik.http.services.changedetection-app.loadbalancer.server.port=5000'
 
   playwright:
     image: browserless/chrome:latest
@@ -54,8 +74,13 @@ services:
       CHROME_REFRESH_TIME: 600000
       DEFAULT_BLOCK_ADS: true
       DEFAULT_STEALTH: true
+      CONTAINER_NAME: changedetection-playwright
 
 networks:
   changedetection:
     name: changedetection
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
